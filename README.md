@@ -118,7 +118,7 @@ cargo run --example okx_demo
 cargo run --example okx_demo -- --symbol ETH-USDT
 
 # Show more updates
-cargo run --example okx_demo -- --updates 20
+cargo run --example okx_demo -- --update-count 20
 
 # Using environment variables
 OKX_SYMBOL=ETH-USDT cargo run --example okx_demo
@@ -129,15 +129,16 @@ cargo run --example okx_demo -- --help
 
 ### Configuration Options
 
-The example can be configured via command-line arguments or environment variables:
+The example uses [clap](https://github.com/clap-rs/clap) for configuration and can be configured via command-line arguments or environment variables:
 
 | Option | Short | Environment Variable | Default | Description |
 |--------|-------|---------------------|---------|-------------|
 | `--rest-url` | `-r` | `OKX_REST_URL` | `https://www.okx.com` | REST API base URL |
 | `--ws-url` | `-w` | `OKX_WS_URL` | `wss://ws.okx.com:8443/ws/v5/public` | WebSocket URL |
 | `--symbol` | `-s` | `OKX_SYMBOL` | `BTC-USDT` | Trading symbol |
-| `--updates` | `-u` | `OKX_UPDATE_COUNT` | `10` | Number of updates to display |
+| `--update-count` | `-u` | `OKX_UPDATE_COUNT` | `10` | Number of updates to display |
 | `--help` | `-h` | - | - | Show help message |
+| `--version` | `-V` | - | - | Show version |
 
 ## Testing
 

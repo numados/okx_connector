@@ -1,129 +1,41 @@
+use clap::Parser;
 use okx_connector::client::{OKXRestClient, OKXWebSocketClient};
 use tokio::sync::mpsc;
 
-/// Configuration for the OKX demo
-#[derive(Debug, Clone)]
+/// OKX Connector Demo - Order Book Example
+///
+/// This example demonstrates how to use the OKX connector library to:
+/// - Fetch order book snapshots via REST API
+/// - Subscribe to real-time order book updates via WebSocket
+#[derive(Parser, Debug)]
+#[command(name = "okx_demo")]
+#[command(author, version, about, long_about = None)]
 struct Config {
     /// REST API base URL
+    #[arg(
+        short = 'r',
+        long,
+        env = "OKX_REST_URL",
+        default_value = "https://www.okx.com"
+    )]
     rest_url: String,
+
     /// WebSocket URL
+    #[arg(
+        short = 'w',
+        long,
+        env = "OKX_WS_URL",
+        default_value = "wss://ws.okx.com:8443/ws/v5/public"
+    )]
     ws_url: String,
-    /// Trading symbol (e.g., "BTC-USDT", "ETH-USDT")
+
+    /// Trading symbol (e.g., "BTC-USDT", "ETH-USDT", "SOL-USDT")
+    #[arg(short = 's', long, env = "OKX_SYMBOL", default_value = "BTC-USDT")]
     symbol: String,
+
     /// Number of WebSocket updates to display
+    #[arg(short = 'u', long, env = "OKX_UPDATE_COUNT", default_value = "10")]
     update_count: usize,
-}
-
-impl Config {
-    /// Load configuration from environment variables with defaults
-    fn from_env() -> Self {
-        Self {
-            rest_url: std::env::var("OKX_REST_URL")
-                .unwrap_or_else(|_| "https://www.okx.com".to_string()),
-            ws_url: std::env::var("OKX_WS_URL")
-                .unwrap_or_else(|_| "wss://ws.okx.com:8443/ws/v5/public".to_string()),
-            symbol: std::env::var("OKX_SYMBOL").unwrap_or_else(|_| "BTC-USDT".to_string()),
-            update_count: std::env::var("OKX_UPDATE_COUNT")
-                .ok()
-                .and_then(|s| s.parse().ok())
-                .unwrap_or(10),
-        }
-    }
-
-    /// Parse configuration from command-line arguments
-    fn from_args() -> Self {
-        let args: Vec<String> = std::env::args().collect();
-        let mut config = Self::from_env();
-
-        let mut i = 1;
-        while i < args.len() {
-            match args[i].as_str() {
-                "--rest-url" | "-r" => {
-                    if i + 1 < args.len() {
-                        config.rest_url = args[i + 1].clone();
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "--ws-url" | "-w" => {
-                    if i + 1 < args.len() {
-                        config.ws_url = args[i + 1].clone();
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "--symbol" | "-s" => {
-                    if i + 1 < args.len() {
-                        config.symbol = args[i + 1].clone();
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "--updates" | "-u" => {
-                    if i + 1 < args.len() {
-                        if let Ok(count) = args[i + 1].parse() {
-                            config.update_count = count;
-                        }
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "--help" | "-h" => {
-                    print_help();
-                    std::process::exit(0);
-                }
-                _ => {
-                    i += 1;
-                }
-            }
-        }
-
-        config
-    }
-}
-
-/// Print help message
-fn print_help() {
-    println!("OKX Connector Demo - Order Book Example");
-    println!();
-    println!("USAGE:");
-    println!("    cargo run --example okx_demo [OPTIONS]");
-    println!();
-    println!("OPTIONS:");
-    println!("    -r, --rest-url <URL>     REST API base URL");
-    println!("                             [default: https://www.okx.com]");
-    println!("                             [env: OKX_REST_URL]");
-    println!();
-    println!("    -w, --ws-url <URL>       WebSocket URL");
-    println!("                             [default: wss://ws.okx.com:8443/ws/v5/public]");
-    println!("                             [env: OKX_WS_URL]");
-    println!();
-    println!("    -s, --symbol <SYMBOL>    Trading symbol");
-    println!("                             [default: BTC-USDT]");
-    println!("                             [env: OKX_SYMBOL]");
-    println!();
-    println!("    -u, --updates <COUNT>    Number of WebSocket updates to display");
-    println!("                             [default: 10]");
-    println!("                             [env: OKX_UPDATE_COUNT]");
-    println!();
-    println!("    -h, --help               Print this help message");
-    println!();
-    println!("EXAMPLES:");
-    println!("    # Use defaults");
-    println!("    cargo run --example okx_demo");
-    println!();
-    println!("    # Custom symbol");
-    println!("    cargo run --example okx_demo --symbol ETH-USDT");
-    println!();
-    println!("    # Show more updates");
-    println!("    cargo run --example okx_demo --updates 20");
-    println!();
-    println!("    # Using environment variables");
-    println!("    OKX_SYMBOL=ETH-USDT cargo run --example okx_demo");
 }
 
 /// Format a timestamp in milliseconds to a human-readable date/time
@@ -178,8 +90,8 @@ fn format_total(price: f64, amount: f64) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load configuration
-    let config = Config::from_args();
+    // Parse configuration from command-line arguments and environment variables
+    let config = Config::parse();
 
     print_header(&format!(
         "🚀 OKX Connector Demo - {} Order Book",
